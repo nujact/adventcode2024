@@ -8,7 +8,9 @@ public class Main {
     public static void main(String[] args) {
         //Day1.Start();
         //Day2.Start();
-        Day3.Start();
+        //Day3.Start();
+        //Day4.Start();
+        Day5.Start();
     }
 
 }
