@@ -38,9 +38,42 @@ public class Day6 {
 
         Matrix matrix = new Matrix(inputMemory.toString());
 
-        Part1(matrix);
+        //Part1(matrix);
+        Part2(matrix);
 
         System.out.println("2024 Day 6 end");
+    }
+
+    private static void Part2(Matrix matrix) {
+        matrix.Print();
+        int guardRowStart = matrix.guard.row;
+        int guardColStart = matrix.guard.col;
+
+        int deathLoopCount = 0;
+        Cell[][] cellMatrix = matrix.cellMatrix;
+        for (int i = 0; i < cellMatrix.length; i++) {
+            Cell[] row = cellMatrix[i];
+            for (int j = 0; j < row.length; j++) {
+                Cell col = row[j];
+                matrix.guard.direction = "N";
+                matrix.guard.row = guardRowStart;
+                matrix.guard.col = guardColStart;
+                matrix.guard.deathLoop = false;
+                matrix.CellReset();
+                // switch this cell out for obstacle and test guard movement
+                if (!col.obstructed && (matrix.guard.row != i || matrix.guard.col != j)) {
+                    col.obstructed = true;
+                    while (matrix.MoveGuard()) {
+
+                    }
+                    if (matrix.guard.deathLoop) deathLoopCount++;
+                    col.obstructed = false;
+                }
+            }
+        }
+
+        matrix.Print();
+        System.out.println("deathloop count " + deathLoopCount);
     }
 
     private static void Part1(Matrix matrix) {
@@ -50,7 +83,7 @@ public class Day6 {
 
         }
         matrix.Print();
-        System.out.println("Guard "+ matrix.guard.row +" "+ matrix.guard.col +" "+ matrix.guard.direction );
+        System.out.println("Guard " + matrix.guard.row + " " + matrix.guard.col + " " + matrix.guard.direction);
 
         int visitedCells = 0;
         for (Cell[] row : matrix.cellMatrix) {
@@ -84,7 +117,6 @@ public class Day6 {
                     }
                 }
             }
-
         }
 
         public void Print() {
@@ -99,8 +131,18 @@ public class Day6 {
             }
         }
 
+        public void CellReset() {
+            for (Cell[] row : cellMatrix) {
+                for (Cell col : row) {
+                    col.visitedW = col.visitedE = col.visitedN = col.visitedS = 0;
+                    col.visited = false;
+                }
+            }
+        }
+
         public boolean MoveGuard() {
             boolean validMove = true;
+            guard.deathLoop = false;
 
             switch (guard.direction) {
                 case "N":
@@ -164,7 +206,26 @@ public class Day6 {
                             break;
                     }
                 } else {
-                    cellMatrix[guard.row][guard.col].visited = true;
+                    cell.visited = true;
+                    switch (guard.direction) {
+                        case "N":
+                            cell.visitedN++;
+                            break;
+                        case "E":
+                            cell.visitedE++;
+                            break;
+                        case "S":
+                            cell.visitedS++;
+                            break;
+                        case "W":
+                            cell.visitedW++;
+                            break;
+                    }
+                    if (cell.visitedN > 1 || cell.visitedE > 1 || cell.visitedS > 1 || cell.visitedW > 1) {
+                        // in a death loop, exit
+                        guard.deathLoop = true;
+                        validMove = false;
+                    }
                 }
             }
 
@@ -175,6 +236,10 @@ public class Day6 {
     public static class Cell {
         boolean obstructed = false;
         boolean visited = false;
+        int visitedN = 0;
+        int visitedE = 0;
+        int visitedS = 0;
+        int visitedW = 0;
     }
 
     private static final List<String> CompassDirections = List.of("N", "E", "S", "W");
@@ -183,6 +248,7 @@ public class Day6 {
         int row = 0;
         int col = 0;
         String direction = "N";
+        boolean deathLoop = false;
     }
 }
 
