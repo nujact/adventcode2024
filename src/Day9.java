@@ -1,18 +1,17 @@
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Day8 {
+public class Day9 {
 
     public static void Start() {
-        System.out.println("2024 Day 8 start");
+        System.out.println("2024 Day 9 start");
 
         // open file and loop through to gather raw inputs
         StringBuilder inputMemory = new StringBuilder();
-        try (BufferedReader br = new BufferedReader(new FileReader("./inputs/input8.txt"))) {
+        try (BufferedReader br = new BufferedReader(new FileReader("./inputs/input9.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
                 inputMemory.append(line + "\n");
@@ -21,20 +20,8 @@ public class Day8 {
             e.printStackTrace();
         }
 
-//        inputMemory = new StringBuilder();
-//        inputMemory.append("............\n" +
-//                "........0...\n" +
-//                ".....0......\n" +
-//                ".......0....\n" +
-//                "....0.......\n" +
-//                "......A.....\n" +
-//                "............\n" +
-//                "............\n" +
-//                "........A...\n" +
-//                ".........A..\n" +
-//                "............\n" +
-//                "............"
-//        );
+        inputMemory = new StringBuilder();
+        inputMemory.append("2333133121414131402");
 
         System.out.println("inputMemory size: " + inputMemory.length());
         //System.out.println("inputMemory: " + inputMemory);
@@ -63,7 +50,7 @@ public class Day8 {
         // 1190 !! part 2
 
 
-        System.out.println("2024 Day 8 end");
+        System.out.println("2024 Day 9 end");
     }
 
     public static class Cell {
@@ -87,8 +74,7 @@ public class Day8 {
                     if (inputStr != '.') {
                         cellMatrix[j][i].antennaFrequency = inputStr + "";
                         cellMatrix[j][i].antiNodeList.add(inputStr + "");
-                    }
-                    else
+                    } else
                         cellMatrix[j][i].antennaFrequency = "";
                 }
             }
@@ -122,7 +108,7 @@ public class Day8 {
 
                         for (Integer[] brother : cell.brotherList) {
                             int wave = 1;
-                            while (CalcAntiNodesByWave(wave, brother, row, col, cell)){
+                            while (CalcAntiNodesByWave(wave, brother, row, col, cell)) {
                                 wave++;
                             }
                         }
