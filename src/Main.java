@@ -11,7 +11,8 @@ public class Main {
         //Day3.Start();
         //Day4.Start();
         //Day5.Start();
-        Day6.Start();
+        //Day6.Start();
+        Day7.Start();
     }
 
 }
