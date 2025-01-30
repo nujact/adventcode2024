@@ -14,160 +14,199 @@ public class Day9 {
         try (BufferedReader br = new BufferedReader(new FileReader("./inputs/input9.txt"))) {
             String line;
             while ((line = br.readLine()) != null) {
-                inputMemory.append(line + "\n");
+                inputMemory.append(line);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        inputMemory = new StringBuilder();
-        inputMemory.append("2333133121414131402");
+//        inputMemory = new StringBuilder();
+//        inputMemory.append("2333133121414131402");
 
         System.out.println("inputMemory size: " + inputMemory.length());
-        //System.out.println("inputMemory: " + inputMemory);
 
-        Matrix matrix = new Matrix(inputMemory.toString());
-        matrix.CalcAntiNodes();
+        // convert to disk map
+        DiskMap diskMap = new DiskMap(inputMemory.toString());
 
-        matrix.Print();
+        // print disk map
+        diskMap.Print();
 
-        int countAntiNodes = 0;
-        for (int row = 0; row < matrix.cellMatrix.length; row++) {
-            for (int col = 0; col < matrix.cellMatrix[row].length; col++) {
-                Cell cell = matrix.cellMatrix[row][col];
-                if (!cell.antiNodeList.isEmpty()) {
-                    countAntiNodes++;
-                    System.out.print(" " + row + "," + col + " " + cell.antennaFrequency + " antiNodes: ");
-                    for (String antiNode : cell.antiNodeList) {
-                        System.out.print(antiNode + " ");
-                    }
-                    System.out.println();
-                }
-            }
-        }
-        System.out.println("countAntiNodes: " + countAntiNodes);
-        // 329 !! part 1
-        // 1190 !! part 2
+        // defragment disk map
+//        while (diskMap.DefragmentOnce()) {
+//        }
+        diskMap.DefragmentWholeFilesOnce();
 
+
+        // print defragmented disk map
+        System.out.println("defragmented disk map");
+        diskMap.Print();
+
+        // calculate checksum
+        String checksum = diskMap.CalculateChecksum();
+        System.out.println("checksum: " + checksum);
+        // 6225730762521 is correct part 1
+        // 6250605700557 is correct part 2
 
         System.out.println("2024 Day 9 end");
     }
 
-    public static class Cell {
-        String antennaFrequency;
-        List<String> antiNodeList;
-        List<Integer[]> brotherList;
-    }
+    private static class DiskMap {
+        List<Integer> Map;
 
-    public static class Matrix {
-        String[] inputStrings;
-        Cell[][] cellMatrix;
-
-        Matrix(String inputString) {
-            inputStrings = inputString.split("\n");
-            cellMatrix = new Cell[inputStrings.length][inputStrings[0].length()];
-            for (int j = 0; j < cellMatrix.length; j++) {
-                for (int i = 0; i < cellMatrix[j].length; i++) {
-                    cellMatrix[j][i] = new Cell();
-                    cellMatrix[j][i].antiNodeList = new ArrayList<>();
-                    char inputStr = inputStrings[j].charAt(i);
-                    if (inputStr != '.') {
-                        cellMatrix[j][i].antennaFrequency = inputStr + "";
-                        cellMatrix[j][i].antiNodeList.add(inputStr + "");
-                    } else
-                        cellMatrix[j][i].antennaFrequency = "";
+        DiskMap(String inputString) {
+            Map = new ArrayList<>();
+            int fileId = 0;
+            boolean needNewFileId = false;
+            for (int i = 0; i < inputString.length(); i++) {
+                int currentInt = Integer.parseInt(inputString.substring(i, i + 1));
+                if (i % 2 == 0) {
+                    // odd, file size
+                    if (needNewFileId) {
+                        fileId++;
+                        needNewFileId = false;
+                    }
+                    for (int takeCtr = 0; takeCtr < currentInt; takeCtr++) {
+                        Map.add(fileId);
+                    }
+                } else {
+                    // even, empty space
+                    for (int takeCtr = 0; takeCtr < currentInt; takeCtr++) {
+                        Map.add(-1);
+                    }
+                    needNewFileId = true;
                 }
             }
+        }
+
+        boolean DefragmentWholeFilesOnce() {
+            int maxFileId = GetLastFileId();
+
+            boolean moved = false;
+            for (int fileIdCtr = maxFileId; fileIdCtr > -1; fileIdCtr--) {
+                int fileIdCtrLength = GetFileLength(fileIdCtr);
+                int positionFileCtr = GetFirstPositionByFileId(fileIdCtr);
+                int positionFirstEmptyThatFitsCtr = GetFirstEmptyPositionByLength(fileIdCtrLength);
+                if (positionFirstEmptyThatFitsCtr < positionFileCtr && positionFirstEmptyThatFitsCtr != -1) {
+                    // empty space that fits this file prior to file pos, so move it
+                    for (int i = 0; i < fileIdCtrLength; i++) {
+                        Map.set(positionFirstEmptyThatFitsCtr + i, Map.get(positionFileCtr + i));
+                        Map.set(positionFileCtr + i, -1);
+                    }
+                    moved = true;
+                }
+            }
+            return moved;
+        }
+
+        private int GetFirstEmptyPositionByLength(int fileLength) {
+            int pos = -1;
+            boolean foundEmpty = false;
+            int emptyCtr = 0;
+            for (int i = 0; i < Map.size(); i++) {
+                if (Map.get(i) == -1) {
+                    if (!foundEmpty) pos = i;
+                    foundEmpty = true;
+                    emptyCtr++;
+                } else {
+                    if (foundEmpty && emptyCtr >= fileLength) break;
+                    foundEmpty = false;
+                    emptyCtr = 0;
+                    pos = -1;
+                }
+            }
+            return pos;
+        }
+
+        private int GetFirstPositionByFileId(int fileId) {
+            int pos = -1;
+            for (int i = 0; i < Map.size(); i++) {
+                if (Map.get(i) == fileId) {
+                    pos = i;
+                    break;
+                }
+            }
+            return pos;
+        }
+
+        private int GetFileLength(int fileId) {
+            int length = 0;
+            boolean foundStart = false;
+            for (int i = 0; i < Map.size(); i++) {
+                if (Map.get(i) == fileId) {
+                    length++;
+                    foundStart = true;
+                }
+                if (foundStart && Map.get(i) != fileId) {
+                    break;
+                }
+            }
+            return length;
+        }
+
+        private int GetLastFileId() {
+            int lastFileId = -1;
+            for (int i = Map.size() - 1; i > -1; i--) {
+                if (Map.get(i) != -1) {
+                    lastFileId = Map.get(i);
+                    break;
+                }
+            }
+            return lastFileId;
+        }
+
+        boolean DefragmentOnce() {
+            int positionLastUsed = GetLastUsedPosition();
+            int positionFirstEmpty = GetFirstEmptyPosition();
+            boolean moved = false;
+            if (positionFirstEmpty < positionLastUsed) {
+                // empty space prior to last used position, so move it
+                Map.set(positionFirstEmpty, Map.get(positionLastUsed));
+                Map.set(positionLastUsed, -1);
+                moved = true;
+            }
+            return moved;
+        }
+
+        private int GetFirstEmptyPosition() {
+            for (int i = 0; i < Map.size(); i++) {
+                if (Map.get(i) == -1) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        int GetLastUsedPosition() {
+            for (int i = Map.size() - 1; i >= 0; i--) {
+                if (Map.get(i) != -1) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public String CalculateChecksum() {
+            Long checksum = 0L;
+            for (int i = 0; i < Map.size(); i++) {
+                if (Map.get(i) != -1) {
+                    checksum += Map.get(i) * i;
+                }
+            }
+            return checksum.toString();
         }
 
         public void Print() {
-            System.out.print("\nMatrix:\n");
-            for (Cell[] matrixRow : cellMatrix) {
-                for (Cell cell : matrixRow) {
-                    if (!cell.antennaFrequency.isEmpty()) System.out.print(cell.antennaFrequency);
-                    else if (!cell.antiNodeList.isEmpty()) System.out.print("#");
-                    else System.out.print(".");
+            for (int i = 0; i < Map.size(); i++) {
+                int output = Map.get(i);
+                if (output == -1) {
+                    System.out.print(". ");
+                } else {
+                    System.out.print(output + " ");
                 }
-                System.out.println();
             }
             System.out.println();
         }
-
-        public void CalcAntiNodes() {
-            // loop through all cells, rows first, and calculate antiNodes
-            System.out.println("CalcAntiNodes ");
-            for (int row = 0; row < cellMatrix.length; row++) {
-                for (int col = 0; col < cellMatrix[row].length; col++) {
-                    // get the cell that is being processed
-                    Cell cell = cellMatrix[row][col];
-                    if (!cell.antennaFrequency.isEmpty()) {
-                        // cell has an antenna, find its brothers
-                        System.out.print("\n" + row + "," + col + " antennaFreq " + cell.antennaFrequency);
-                        cell.brotherList = GetBrotherList(cell.antennaFrequency, row, col);
-                        System.out.print(" brothers: " + cell.brotherList.size());
-
-                        for (Integer[] brother : cell.brotherList) {
-                            int wave = 1;
-                            while (CalcAntiNodesByWave(wave, brother, row, col, cell)) {
-                                wave++;
-                            }
-                        }
-
-                    }
-                }
-            }
-        }
-
-        private boolean CalcAntiNodesByWave(int wave, Integer[] brother, int row, int col, Cell cell) {
-            int brotherRow = brother[0];
-            int brotherCol = brother[1];
-
-            int fromAntiNodeRow = row - ((brotherRow - row) * wave);
-            int fromAntiNodeCol = col - ((brotherCol - col) * wave);
-            System.out.print(" bro " + brotherRow + "," + brotherCol + " from-anti " + fromAntiNodeRow + "," + fromAntiNodeCol);
-            boolean foundNodes = false;
-            if (fromAntiNodeRow >= 0 && fromAntiNodeCol >= 0 && fromAntiNodeRow < cellMatrix.length && fromAntiNodeCol < cellMatrix[0].length) {
-                cellMatrix[fromAntiNodeRow][fromAntiNodeCol].antiNodeList.add(cell.antennaFrequency);
-                System.out.print(" +++ ");
-                foundNodes = true;
-            } else System.out.print(" --- ");
-
-            int intoAntiNodeRow = brotherRow + ((brotherRow - row) * wave);  // 1,8 into 4,4 = 7,0
-            int intoAntiNodeCol = brotherCol + ((brotherCol - col) * wave);
-            System.out.print(" into-anti " + intoAntiNodeRow + "," + intoAntiNodeCol);
-            if (intoAntiNodeRow >= 0 && intoAntiNodeCol >= 0 && intoAntiNodeRow < cellMatrix.length && intoAntiNodeCol < cellMatrix[0].length) {
-                cellMatrix[intoAntiNodeRow][intoAntiNodeCol].antiNodeList.add(cell.antennaFrequency);
-                System.out.print(" +++ ");
-                foundNodes = true;
-            } else System.out.print(" --- ");
-
-            return foundNodes;
-        }
-
-        public List<Integer[]> GetBrotherList(String antennaFrequency, int row, int col) {
-            List<Integer[]> brotherList = new ArrayList<>();
-
-//            boolean needNewLine = false;
-            for (int j = 0; j < cellMatrix.length; j++) {
-                for (int i = 0; i < cellMatrix[j].length; i++) {
-                    if (cellMatrix[j][i].antennaFrequency.equals(antennaFrequency) && j != row && i != col) {
-                        Integer[] brother = new Integer[]{j, i};
-//                        if (!needNewLine)
-//                            System.out.print(row + "," + col + " antennaFreq " + antennaFrequency + " brothers");
-//                        System.out.print(" " + brother[0] + "," + brother[1]);
-//                        needNewLine = true;
-                        brotherList.add(brother);
-                    }
-                }
-            }
-//            if (needNewLine) System.out.println();
-
-            return brotherList;
-        }
-
-
     }
-
 
 }
 
