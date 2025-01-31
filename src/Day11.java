@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class Day11 {
 
@@ -18,51 +19,79 @@ public class Day11 {
             e.printStackTrace();
         }
 
-        inputMemory = new StringBuilder();
-        inputMemory.append("0 1 10 99 999");
+//        inputMemory = new StringBuilder();
+//        inputMemory.append("125 17");
 
         System.out.println("inputMemory size: " + inputMemory.length());
 
         Stones stones = new Stones(inputMemory.toString());
         stones.Print();
-        stones.Blink();
-        System.out.println("After blink");
-        stones.Print();
+
+        for (int i = 1; i < 76; i++) {
+            stones.Blink();
+            System.out.println("After blink " + i + " stones count: " + stones.values.size());
+            //stones.Print();
+        }
+
+        System.out.println("Stones count: " + stones.values.size());
+        // 218079 is the correct answer part 1
+
+//        for (int i = 1; i < 51; i++) {
+//            stones.Blink();
+//            System.out.println("After blink " + i);
+//            //stones.Print();
+//        }
+//        System.out.println("Stones count: " + stones.values.size());
+//        //
 
         System.out.println("2024 Day 11 end");
     }
 
     private static class Stones {
-        public Integer[] values;
+        public ArrayList<Long> values = new ArrayList<>();
 
         public Stones(String inputMemory) {
             String[] inputArray = inputMemory.split(" ");
-            values = new Integer[inputArray.length];
             for (int i = 0; i < inputArray.length; i++) {
-                values[i] = Integer.parseInt(inputArray[i]);
+                values.add(Long.parseLong(inputArray[i]));
             }
         }
 
         public void Blink() {
-            for (int i = 0; i < values.length; i++) {
-                values[i] = ApplyRules(values[i]);
+            for (int i = 0; i < values.size(); i++) {
+                if (ApplyRulesOnArrayElement(i)) {
+                    i++;
+                }
             }
         }
 
-        private int ApplyRules(int value) {
+        private boolean ApplyRulesOnArrayElement(int position) {
+            Long value = values.get(position);
+            int halfLength;
+            long leftStone;
+            long rightStone;
+            boolean inserted = false;
+            String valueString = String.valueOf(value);
             if (value == 0) {
-                return 1;
-            } else if (String.valueOf(value).length() % 2 == 0) {
-                System.out.println("Even number of digits: " + value);
-                return value / 2;
+                values.set(position, 1L);
+            } else if (valueString.length() % 2 == 0) {
+                // split into 2 stones, drop leading 0 on the right stone
+                halfLength = valueString.length() / 2;
+                leftStone = Long.parseLong(valueString.substring(0, halfLength));
+                rightStone = Long.parseLong(valueString.substring(halfLength));
+                values.set(position, leftStone);
+                values.add(position + 1, rightStone);
+                inserted = true;
             } else {
-                return value * 2024;
+                // multiply by 2024
+                values.set(position, value * 2024);
             }
+            return inserted;
         }
 
         public void Print() {
-            for (int i = 0; i < values.length; i++) {
-                System.out.print(values[i] + " ");
+            for (int i = 0; i < values.size(); i++) {
+                System.out.print(values.get(i) + " ");
             }
             System.out.println();
         }
