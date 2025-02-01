@@ -1,7 +1,8 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.util.*;
 
 public class Day11 {
 
@@ -24,79 +25,79 @@ public class Day11 {
 
         System.out.println("inputMemory size: " + inputMemory.length());
 
-        Stones stones = new Stones(inputMemory.toString());
-        stones.Print();
+        long[] stones = Arrays.stream(inputMemory.toString().split(" "))
+                .mapToLong(Long::parseLong).toArray();
 
-        for (int i = 1; i < 76; i++) {
-            stones.Blink();
-            System.out.println("After blink " + i + " stones count: " + stones.values.size());
-            //stones.Print();
+        // print stones
+        System.out.print("starting stones: ");
+        for (long stone : stones) {
+            System.out.print(stone + " ");
+        }
+        System.out.println();
+
+        int blinkCount = 75;
+        long stoneCount = 0;
+        // init timer to measure performance
+        long startTime;
+        long endTime;
+        System.out.println("Blinking " + blinkCount + " times, final row");
+        for (long stone : stones) {
+            // start timer
+            startTime = System.nanoTime();
+            long blinkRecurseCount = BlinkRecurse(stone, blinkCount);
+            endTime = System.nanoTime();
+            stoneCount += blinkRecurseCount;
+            System.out.println("blinkRecurseCount: " + blinkRecurseCount + " stoneCount: " + stoneCount + " time: " + (endTime - startTime) / 1000000 + "ms");
         }
 
-        System.out.println("Stones count: " + stones.values.size());
+        System.out.println("\nstoneCount: " + stoneCount);
+
         // 218079 is the correct answer part 1
-
-//        for (int i = 1; i < 51; i++) {
-//            stones.Blink();
-//            System.out.println("After blink " + i);
-//            //stones.Print();
-//        }
-//        System.out.println("Stones count: " + stones.values.size());
-//        //
-
+        // 259755538429618 is the correct answer part 2
         System.out.println("2024 Day 11 end");
     }
 
-    private static class Stones {
-        public ArrayList<Long> values = new ArrayList<>();
+    private static int halfLength = 0;
+    private static long leftStone = 0;
+    private static long rightStone = 0;
+    private static long stoneCount = 0;
+    private static String valueString = "";
+    private static Map<Map<Long, Integer>, Long> cachedBlinks = new HashMap<>();
 
-        public Stones(String inputMemory) {
-            String[] inputArray = inputMemory.split(" ");
-            for (int i = 0; i < inputArray.length; i++) {
-                values.add(Long.parseLong(inputArray[i]));
-            }
+    private static long BlinkRecurse(long stone, int blinkCount) {
+        if (blinkCount <= 0) {
+            //System.out.print(stone + ".");
+            return 1;
         }
 
-        public void Blink() {
-            for (int i = 0; i < values.size(); i++) {
-                if (ApplyRulesOnArrayElement(i)) {
-                    i++;
-                }
-            }
+        // check cache
+        if (cachedBlinks.containsKey(Map.of(stone, blinkCount))) {
+            long cachedBlinkResult = cachedBlinks.get(Map.of(stone, blinkCount));
+            //System.out.println("cache hit: " + stone + " " + blinkCount + " " + cachedBlinkResult);
+            return cachedBlinkResult;
         }
 
-        private boolean ApplyRulesOnArrayElement(int position) {
-            Long value = values.get(position);
-            int halfLength;
-            long leftStone;
-            long rightStone;
-            boolean inserted = false;
-            String valueString = String.valueOf(value);
-            if (value == 0) {
-                values.set(position, 1L);
-            } else if (valueString.length() % 2 == 0) {
-                // split into 2 stones, drop leading 0 on the right stone
-                halfLength = valueString.length() / 2;
-                leftStone = Long.parseLong(valueString.substring(0, halfLength));
-                rightStone = Long.parseLong(valueString.substring(halfLength));
-                values.set(position, leftStone);
-                values.add(position + 1, rightStone);
-                inserted = true;
-            } else {
-                // multiply by 2024
-                values.set(position, value * 2024);
-            }
-            return inserted;
+        if (stone == 0) {
+            stoneCount = BlinkRecurse(1, blinkCount - 1);
+        } else if (String.valueOf(stone).length() % 2 == 0) {
+            // split into 2 stones, drop leading 0 on the right stone
+            valueString = String.valueOf(stone);
+            leftStone = Long.parseLong(valueString.substring(0, valueString.length() / 2));
+            stoneCount = BlinkRecurse(leftStone, blinkCount - 1);
+
+            valueString = String.valueOf(stone);
+            rightStone = Long.parseLong(valueString.substring(valueString.length() / 2));
+            stoneCount += BlinkRecurse(rightStone, blinkCount - 1);
+        } else {
+            stoneCount = BlinkRecurse(stone * 2024, blinkCount - 1);
         }
 
-        public void Print() {
-            for (int i = 0; i < values.size(); i++) {
-                System.out.print(values.get(i) + " ");
-            }
-            System.out.println();
-        }
+        // update cache
+        if (!cachedBlinks.containsKey(Map.of(stone, blinkCount)))
+            cachedBlinks.put(Map.of(stone, blinkCount), stoneCount);
+
+        return stoneCount;
     }
-
 }
 
 
