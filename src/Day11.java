@@ -25,6 +25,7 @@ public class Day11 {
 
         System.out.println("inputMemory size: " + inputMemory.length());
 
+        // create array of inputs - split by space, parse to long
         long[] stones = Arrays.stream(inputMemory.toString().split(" "))
                 .mapToLong(Long::parseLong).toArray();
 
@@ -53,11 +54,10 @@ public class Day11 {
         System.out.println("\nstoneCount: " + stoneCount);
 
         // 218079 is the correct answer part 1
-        // 259755538429618 is the correct answer part 2
+        // 259,755,538,429,618 is the correct answer part 2
         System.out.println("2024 Day 11 end");
     }
 
-    private static int halfLength = 0;
     private static long leftStone = 0;
     private static long rightStone = 0;
     private static long stoneCount = 0;
@@ -66,17 +66,19 @@ public class Day11 {
 
     private static long BlinkRecurse(long stone, int blinkCount) {
         if (blinkCount <= 0) {
-            //System.out.print(stone + ".");
             return 1;
         }
 
         // check cache
         if (cachedBlinks.containsKey(Map.of(stone, blinkCount))) {
             long cachedBlinkResult = cachedBlinks.get(Map.of(stone, blinkCount));
-            //System.out.println("cache hit: " + stone + " " + blinkCount + " " + cachedBlinkResult);
             return cachedBlinkResult;
         }
 
+        // this is the core of a blink step - 3 rules
+        // rule 1 - flip 0 to 1
+        // rule 2 - even length of number - split into halves (string split)
+        // rule 3 - otherwise multiply by 2024
         if (stone == 0) {
             stoneCount = BlinkRecurse(1, blinkCount - 1);
         } else if (String.valueOf(stone).length() % 2 == 0) {
